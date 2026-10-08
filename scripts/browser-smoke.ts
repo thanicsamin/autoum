@@ -292,7 +292,10 @@ try {
   await rpc('send', { chatId, text: 'QOL STREAM' });
   await panel.getByText('Reading paragraph 24:', { exact: false }).waitFor();
   await panel.waitForFunction(() => { const el = document.querySelector('.conversation')!; return el.scrollHeight - el.scrollTop - el.clientHeight < 5; });
-  await panel.locator('.conversation').evaluate(el => { el.scrollTop = 100; });
+  await panel.bringToFront();
+  // Programmatic scrolling on an inactive CI tab can defer its scroll event.
+  // Deliver the matching event before asserting the reader-detached state.
+  await panel.locator('.conversation').evaluate(el => { el.scrollTop = 100; el.dispatchEvent(new Event('scroll', { bubbles: true })); });
   await panel.getByRole('button', { name: 'Jump to latest ↓', exact: true }).waitFor();
   const readingPosition = await panel.locator('.conversation').evaluate(el => el.scrollTop);
   releaseScroll!(); await waitIdle();
