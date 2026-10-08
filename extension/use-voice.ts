@@ -6,6 +6,7 @@ export function useVoice(chatId: string | undefined, capability: any, call: Call
   const [phase, setPhase] = useState<'idle' | 'connecting' | 'recording' | 'connected'>('idle'); const phaseRef = useRef(phase); phaseRef.current = phase;
   const [status, setStatus] = useState(''); const [error, setError] = useState(''); const [speaking, setSpeaking] = useState(false);
   const session = useRef<{ id: string; chatId: string; mode: 'push' | 'conversation' } | undefined>(undefined); const generation = useRef(0);
+  const requestedMode = useRef<'push' | 'conversation'>('push');
   const pendingStart = useRef<{ chatId: string; startupId: string } | undefined>(undefined);
   const mic = useRef<MediaStream | undefined>(undefined), audio = useRef<AudioContext | undefined>(undefined), recorder = useRef<AudioWorkletNode | undefined>(undefined), capture = useRef<MediaStreamAudioSourceNode | undefined>(undefined);
   const queued = useRef<Promise<any>>(Promise.resolve()), sources = useRef<AudioBufferSourceNode[]>([]), nextStart = useRef(0);
@@ -42,6 +43,7 @@ export function useVoice(chatId: string | undefined, capability: any, call: Call
     setError(''); const epoch = ++generation.current;
     try {
       if (!session.current) {
+        requestedMode.current = mode;
         phaseRef.current = 'connecting'; setPhase('connecting'); setStatus('Connecting native voice…');
         const context = new AudioContext({ sampleRate: 24000 }); audio.current = context; await context.resume(); if (epoch !== generation.current) return; gain.current = context.createGain(); gain.current.connect(context.destination); gain.current.gain.value = prefs.current.speakReplies ? 1 : 0;
         const pending = { chatId, startupId: crypto.randomUUID() }; pendingStart.current = pending;
@@ -55,8 +57,13 @@ export function useVoice(chatId: string | undefined, capability: any, call: Call
     } catch (e) { if (epoch === generation.current) fail(e); }
   };
   const startConversation = async () => {
-    if (phaseRef.current !== 'idle' || !capability?.supported) return;
-    setPreferences(value => ({ ...value, mode: 'conversation' }));
+    if (!['idle', 'connected'].includes(phaseRef.current) || !capability?.supported) return;
+    if (session.current) {
+      const ending = cancel(), epoch = generation.current;
+      requestedMode.current = 'conversation'; phaseRef.current = 'connecting'; setPhase('connecting'); setStatus('Connecting native voice…');
+      await ending; if (epoch !== generation.current) return;
+      phaseRef.current = 'idle';
+    }
     await start(true, 'conversation');
   };
   const stopRecording = async () => {
@@ -90,5 +97,5 @@ export function useVoice(chatId: string | undefined, capability: any, call: Call
   }, []);
   useEffect(() => { void cancel(); }, [chatId]);
   useEffect(() => { const close = () => { void cancel(); }; window.addEventListener('pagehide', close); return () => { window.removeEventListener('pagehide', close); void cancel(); }; }, []);
-  return { preferences, setPreferences, phase, status, error, speaking, start, startConversation, stopRecording, cancel, stopSpeaking };
+  return { conversationActive: phase !== 'idle' && requestedMode.current === 'conversation', preferences, setPreferences, phase, status, error, speaking, start, startConversation, stopRecording, cancel, stopSpeaking };
 }
