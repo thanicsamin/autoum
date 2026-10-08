@@ -558,11 +558,21 @@ try {
   assert.equal(requests.filter(r => JSON.stringify(r.messages.filter((m: any) => m.role === 'user').at(-1)?.content).includes('PORT RECONNECT')).length, 1, 'Reconnect must not resend a paid model request');
   // Hold real Chrome commands while an unrelated actual Pi stream is stopped.
   const otherChat = await rpc('new_chat', { provider: 'opencode', model: 'autoum-fixture', mode: 'ask' });
-  await rpc('view_chat', { chatId }); await rpc('update_chat', { chatId, mode: 'ask' });
-  // The RPC response can beat the sidebar's render of the broadcast selection.
-  // Do not send through the composer while it still displays the other chat.
+  // Select through the real UI: a second RPC selecting another chat can race
+  // the sidebar's view_chat effect triggered by the new-chat broadcast.
+  await panel.waitForFunction(title => document.querySelector('.conversation-bar > span')?.getAttribute('title') === title, otherChat.title);
   const mainChatTitle = (await rpc('state')).chats.find((c: any) => c.id === chatId).title;
+  const selectionList = panel.getByRole('region', { name: 'Chats and folders', exact: true });
+  if (!await selectionList.isVisible()) await panel.getByRole('button', { name: 'Chats and folders', exact: true }).click();
+  await panel.getByRole('combobox', { name: 'Chat folder', exact: true }).selectOption('all');
+  await panel.getByRole('textbox', { name: 'Search chats', exact: true }).fill('');
+  await selectionList.getByRole('button', { name: 'Chats', exact: true }).click();
+  await selectionList.locator('.chat-row').filter({ hasText: mainChatTitle }).click();
   await panel.waitForFunction(title => document.querySelector('.conversation-bar > span')?.getAttribute('title') === title, mainChatTitle);
+  const selectionDeadline = Date.now() + 10000;
+  while ((await rpc('state')).activeChatId !== chatId) { assert.ok(Date.now() < selectionDeadline, 'UI chat selection must persist before sending'); await panel.waitForTimeout(20); }
+  await rpc('update_chat', { chatId, mode: 'ask' });
+  await panel.getByRole('button', { name: 'Chats and folders', exact: true }).click();
   const stopStream = async () => {
     releaseScroll = undefined;
     await panel.getByRole('textbox', { name: 'Message Autoum', exact: true }).fill('QOL STREAM');
