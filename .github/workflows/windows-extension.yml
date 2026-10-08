@@ -11,7 +11,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     permissions:
-      contents: read
+      # GitHub requires collaborator access to download unpublished draft assets.
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
