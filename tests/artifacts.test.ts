@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { pathToFileURL } from 'node:url';
 
 test('artifact startup creates a user folder, upgrades the old denied default and preserves explicit destinations', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'autoum-artifacts-'));
@@ -21,7 +22,7 @@ test('artifact startup creates a user folder, upgrades the old denied default an
       if (path === legacy) throw Object.assign(Error('Denied legacy folder'), { code: 'EACCES' });
       return fs.mkdir(path, options);
     } } });
-    const artifacts = await import(${JSON.stringify(resolve('host/artifacts.ts'))});
+    const artifacts = await import(${JSON.stringify(pathToFileURL(resolve('host/artifacts.ts')).href)});
     const expected = join(folder, 'home', 'autoum', 'artifacts');
     assert.equal(await artifacts.initializeArtifacts(), false);
     assert.equal(artifacts.artifactsDir, expected);
@@ -42,7 +43,7 @@ test('artifact startup creates a user folder, upgrades the old denied default an
     delete process.env.AUTOUM_ARTIFACTS_DIR;
     await fs.mkdir(process.env.AUTOUM_DATA_DIR, { recursive: true });
     await fs.writeFile(join(process.env.AUTOUM_DATA_DIR, 'settings.json'), JSON.stringify({ artifactsDir: legacy, chats: [], skillPaths: [], extensionPaths: [] }));
-    const { AgentHost } = await import(${JSON.stringify(resolve('host/agent.ts'))});
+    const { AgentHost } = await import(${JSON.stringify(pathToFileURL(resolve('host/agent.ts')).href)});
     const host = new AgentHost({ send() {} }); await host.init();
     try {
       assert.equal(host.state().artifactError, '');
