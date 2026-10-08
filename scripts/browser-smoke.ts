@@ -559,6 +559,10 @@ try {
   // Hold real Chrome commands while an unrelated actual Pi stream is stopped.
   const otherChat = await rpc('new_chat', { provider: 'opencode', model: 'autoum-fixture', mode: 'ask' });
   await rpc('view_chat', { chatId }); await rpc('update_chat', { chatId, mode: 'ask' });
+  // The RPC response can beat the sidebar's render of the broadcast selection.
+  // Do not send through the composer while it still displays the other chat.
+  const mainChatTitle = (await rpc('state')).chats.find((c: any) => c.id === chatId).title;
+  await panel.waitForFunction(title => document.querySelector('.conversation-bar > span')?.getAttribute('title') === title, mainChatTitle);
   const stopStream = async () => {
     releaseScroll = undefined;
     await panel.getByRole('textbox', { name: 'Message Autoum', exact: true }).fill('QOL STREAM');
