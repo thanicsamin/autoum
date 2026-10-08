@@ -17,6 +17,8 @@ For updates, close the selected browsers, run the new installer, then click **Re
 
 The optional Windows ZIP contains `Setup-extension.cmd` for Vivaldi. To install Chrome from that ZIP, run `runtime\node.exe scripts\install-extension.mjs --chrome` in the extracted folder, then use the same browser steps above. The executable installer is the easier option.
 
+Windows runner checks cover the actual installer, executable native bridge, updates, registration conflicts and uninstalling with data preserved. Interactive Chrome/Vivaldi account sign-in and Windows audio still need testing on a user’s device.
+
 ## Linux extension bundle
 
 Extract the standalone Linux extension bundle into a permanent folder. Close Vivaldi, then open `Setup-extension`. It installs Autoum under `~/.local/share/autoum-vivaldi`, registers the local companion and updates your per-user Vivaldi launcher. Open Vivaldi normally and use Autoum's toolbar button or Ctrl+Shift+O.
