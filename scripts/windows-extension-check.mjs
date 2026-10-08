@@ -17,16 +17,16 @@ const plans = ['google-chrome', 'vivaldi'].map(browser => windowsExtensionPlan({
 async function registry(entry) {
   return execute('reg.exe', ['query', entry.key, '/ve', '/reg:' + entry.view]).then(r => windowsRegistryValue(r.stdout)).catch(e => { if (e.code === 1) return undefined; throw e; });
 }
-async function native(helper, request) {
-  const child = spawn(helper, [], { windowsHide: true, env: { ...process.env, HOME: home, USERPROFILE: home, AUTOUM_DISABLE_ACCOUNT_DETECTION: '1', AUTOUM_DISABLE_MODEL_NETWORK: '1', AUTOUM_DISABLE_USAGE_NETWORK: '1' } });
-  let buffer = Buffer.alloc(0), errors = '';
+async function native(helper, request, args = [], extraEnv = {}) {
+  const child = spawn(helper, args, { windowsHide: true, env: { ...process.env, HOME: home, USERPROFILE: home, AUTOUM_DISABLE_ACCOUNT_DETECTION: '1', AUTOUM_DISABLE_MODEL_NETWORK: '1', AUTOUM_DISABLE_USAGE_NETWORK: '1', ...extraEnv } });
+  let buffer = Buffer.alloc(0), errors = '', receivedBytes = 0;
   child.stderr.on('data', bytes => { errors += bytes; });
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => { child.kill(); reject(Error('Native reply timed out: ' + errors)); }, 60000);
+    const timeout = setTimeout(() => { child.kill(); reject(Error('Native reply timed out: receivedBytes=' + receivedBytes + ', receivedReply=' + Boolean(reply) + ', stderr=' + errors)); }, 60000);
     let reply;
     child.on('error', reject);
     child.stdout.on('data', bytes => {
-      buffer = Buffer.concat([buffer, bytes]);
+      receivedBytes += bytes.length; buffer = Buffer.concat([buffer, bytes]);
       while (buffer.length >= 4 && buffer.length >= 4 + buffer.readUInt32LE()) {
         const size = buffer.readUInt32LE(); const packet = JSON.parse(buffer.subarray(4, 4 + size).toString()); buffer = buffer.subarray(4 + size);
         if (packet.reply === request.id) { reply = packet; child.stdin.end(); }
@@ -52,6 +52,8 @@ for (const plan of plans) {
   assert(worker.includes(plan.host)); assert(!worker.includes('rocks.autoum.agent'));
   const host = JSON.parse(await readFile(plan.manifestPath)); assert.equal(host.path, plan.helper); assert.equal(host.name, plan.host); assert.equal(host.allowed_origins.length, 1);
   for (const entry of plan.registry) assert.equal(await registry(entry), plan.manifestPath);
+  const direct = await native(join(plan.companion, 'runtime/node.exe'), { id: 'direct-state', type: 'state', data: {} }, [join(plan.companion, 'dist/host/main.mjs')], { AUTOUM_DATA_DIR: plan.data, AUTOUM_PROFILE_DIR: plan.profile });
+  assert(Array.isArray(direct.chats)); console.log(plan.browser + ': direct bundled Node host replied');
   const state = await native(plan.helper, { id: 'state-test', type: 'state', data: {} });
   assert(Array.isArray(state.chats)); assert.equal(state.accounts.length, 0);
   await native(plan.helper, { id: 'permission-test', type: 'defaults', data: { mode: 'auto-review' } });
