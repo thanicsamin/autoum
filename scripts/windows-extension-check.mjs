@@ -18,6 +18,7 @@ async function registry(entry) {
   return execute('reg.exe', ['query', entry.key, '/ve', '/reg:' + entry.view]).then(r => windowsRegistryValue(r.stdout)).catch(e => { if (e.code === 1) return undefined; throw e; });
 }
 async function native(helper, request, args = [], extraEnv = {}) {
+  const nativeStart = performance.now();
   const child = spawn(helper, args, { windowsHide: true, env: { ...process.env, HOME: home, USERPROFILE: home, AUTOUM_DISABLE_ACCOUNT_DETECTION: '1', AUTOUM_DISABLE_MODEL_NETWORK: '1', AUTOUM_DISABLE_USAGE_NETWORK: '1', ...extraEnv } });
   let buffer = Buffer.alloc(0), errors = '', receivedBytes = 0;
   child.stderr.on('data', bytes => { errors += bytes; });
@@ -32,7 +33,7 @@ async function native(helper, request, args = [], extraEnv = {}) {
         if (packet.reply === request.id) { reply = packet; child.stdin.end(); }
       }
     });
-    child.on('close', code => { clearTimeout(timeout); if (code !== 0 || !reply || reply.error) reject(Error('Native companion failed: ' + JSON.stringify(reply) + errors)); else resolve(reply.data); });
+    child.on('close', code => { clearTimeout(timeout); if (code !== 0 || !reply || reply.error) reject(Error('Native companion failed: ' + JSON.stringify(reply) + errors)); else { console.log('Native round trip ' + request.id + ': ' + (performance.now() - nativeStart).toFixed(1) + ' ms'); resolve(reply.data); } });
     const bytes = Buffer.from(JSON.stringify(request)), size = Buffer.alloc(4); size.writeUInt32LE(bytes.length); child.stdin.write(Buffer.concat([size, bytes]));
   });
 }
@@ -69,6 +70,8 @@ for (let i = 0; i < plans.length; i++) {
   assert.equal(await readFile(join(plan.data, 'preserve.txt'), 'utf8'), 'synthetic chat/account data');
   assert.deepEqual(await readFile(join(plan.extension, 'manifest.json')), savedVersions[i]);
   assert.equal(JSON.parse(await readFile(join(plan.data, 'settings.json'))).lastMode, 'auto-review');
+  const upgraded = await native(plan.helper, { id: 'updated-state', type: 'state', data: {} });
+  assert.equal(upgraded.lastMode, 'auto-review');
 }
 // Foreign registrations cannot be overwritten, and the full-browser helper stays untouched.
 const plan = plans[0], entry = plan.registry[0];
