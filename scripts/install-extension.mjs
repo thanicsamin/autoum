@@ -22,7 +22,11 @@ export async function installVivaldiLauncher(extension, target, applications = j
 // Standalone installation deliberately avoids install.mjs: that installer owns
 // the bundled browser profile. Each ordinary browser gets its own agent store.
 export async function installExtension({ browser = 'vivaldi', destination, runtimeRoot, configRoot, importData, desktop = true } = {}) {
-  if (process.platform !== 'linux') throw Error('This standalone installer currently supports Linux.');
+  if (process.platform === 'win32') {
+    const { installWindowsExtension } = await import('./windows-extension.mjs');
+    return installWindowsExtension({ browser, destination, runtimeRoot, configRoot, importData });
+  }
+  if (process.platform !== 'linux') throw Error('This standalone installer supports Linux and Windows.');
   if (!['vivaldi', 'google-chrome'].includes(browser)) throw Error('Choose vivaldi or google-chrome.');
   const packaged = resolve(fileURLToPath(new URL('../', import.meta.url)));
   const root = runtimeRoot || (await access(join(packaged, 'runtime/node')).then(() => true).catch(() => false) ? packaged : join(packaged, 'releases/Autoum-0.1.0-linux-x64'));
@@ -85,7 +89,12 @@ export async function installExtension({ browser = 'vivaldi', destination, runti
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const browser = process.argv.includes('--chrome') ? 'google-chrome' : 'vivaldi';
-  const importData = process.argv.includes('--import-settings') ? join(homedir(), '.local/share/autoum') : undefined;
-  console.log(JSON.stringify(await installExtension({ browser, importData }), null, 2));
+  if (process.platform === 'win32' && process.argv.includes('--uninstall')) {
+    const { uninstallWindowsExtension } = await import('./windows-extension.mjs');
+    console.log(JSON.stringify(await uninstallWindowsExtension({ browser: process.argv.includes('--chrome') ? 'google-chrome' : 'vivaldi' }), null, 2));
+  } else {
+    const browser = process.argv.includes('--chrome') ? 'google-chrome' : 'vivaldi';
+    const importData = process.argv.includes('--import-settings') ? process.platform === 'win32' ? join(process.env.LOCALAPPDATA || homedir(), 'Autoum') : join(homedir(), '.local/share/autoum') : undefined;
+    console.log(JSON.stringify(await installExtension({ browser, importData }), null, 2));
+  }
 }

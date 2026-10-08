@@ -6,7 +6,7 @@ Autoum bundles the browser and local agent alongside one another. It does not re
 
 ## Extension edition
 
-The Linux standalone extension bundle includes its own Node companion and local audio models. It keeps your existing new-tab page and browser profile. See [Vivaldi/Chrome installation](docs/INSTALL-EXTENSION.md). Windows/macOS downloads currently provide the complete browser edition. Release notes and testing limits are in [the release guide](docs/RELEASE.md).
+The Linux standalone extension bundle and Windows extension installer include their own Node companion and local audio models. It keeps your existing new-tab page and browser profile. See [Vivaldi/Chrome installation](docs/INSTALL-EXTENSION.md). Windows offers both editions; macOS downloads currently provide the complete browser edition. Release notes and testing limits are in [the release guide](docs/RELEASE.md).
 
 ## Start
 

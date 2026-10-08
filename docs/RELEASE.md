@@ -1,10 +1,10 @@
 # Autoum preview release
 
-Autoum is a personal AI browser sidebar, distributed as a complete Thorium-based browser and as a Linux standalone Vivaldi/Chrome extension with a local companion.
+Autoum is a personal AI browser sidebar, distributed as a complete Thorium-based browser and as a Linux/Windows standalone Vivaldi/Chrome extension with a local companion.
 
 ## Downloads
 
-- Windows x64: setup executable, or portable ZIP.
+- Windows x64: full browser setup/portable ZIP, or **Autoum-Extension-Setup** for your existing Chrome/Vivaldi.
 - Linux x64: browser archive, or standalone extension/companion archive.
 - macOS: separate Intel and Apple Silicon browser archives.
 - Each archive has a SHA-256 sidecar.

@@ -1,0 +1,32 @@
+name: Windows extension installer
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Draft release containing the installer
+        required: true
+        default: v0.1.0-preview.2
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Download exact preview installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release download "$env:RELEASE_TAG" --pattern 'Autoum-Extension-Setup-0.1.0-preview-windows-x64.exe*' --dir downloads
+      - name: Verify checksum
+        shell: pwsh
+        run: |
+          $file = 'downloads/Autoum-Extension-Setup-0.1.0-preview-windows-x64.exe'
+          $expected = ((Get-Content "$file.sha256").Split(' '))[0]
+          if ((Get-FileHash $file -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Checksum mismatch' }
+      - name: Install, native round trip, update, collision and uninstall checks
+        run: node scripts/windows-extension-check.mjs downloads/Autoum-Extension-Setup-0.1.0-preview-windows-x64.exe
