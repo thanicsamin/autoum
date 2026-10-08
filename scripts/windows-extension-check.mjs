@@ -11,7 +11,10 @@ if (process.platform !== 'win32' || process.env.GITHUB_ACTIONS !== 'true') throw
 const installer = process.argv[2];
 await access(installer);
 const temporary = await mkdtemp(join(tmpdir(), 'Autoum extension test '));
-const program = join(temporary, 'Installed App');
+// Exercise the ordinary GUI install location; NSIS /D consumes an unquoted
+// final command-line tail, which execFile's argument quoting changes.
+const program = join(process.env.LOCALAPPDATA, 'Programs', 'Autoum Extension');
+await assert.rejects(access(program));
 const home = join(temporary, 'Synthetic User'); await mkdir(home);
 const plans = ['google-chrome', 'vivaldi'].map(browser => windowsExtensionPlan({ browser, localAppData: process.env.LOCALAPPDATA }));
 async function registry(entry) {
@@ -38,7 +41,7 @@ async function native(helper, request, args = [], extraEnv = {}) {
   });
 }
 async function setup() {
-  try { await execute(installer, ['/S', '/D=' + program], { timeout: 600000 }); }
+  try { await execute(installer, ['/S'], { timeout: 600000 }); }
   catch (error) { console.error(await readFile(join(program, 'setup-last.log'), 'utf8').catch(() => 'No installer log')); throw error; }
 }
 const fullBrowser = plans[0].registry.map(entry => ({ ...entry, key: entry.key.replace(plans[0].host, 'rocks.autoum.agent') }));
@@ -81,7 +84,13 @@ await assert.rejects(installWindowsExtension({ browser: plan.browser, runtimeRoo
 assert.equal(await registry(entry), foreign);
 await execute('reg.exe', ['add', entry.key, '/ve', '/t', 'REG_SZ', '/d', plan.manifestPath, '/f', '/reg:' + entry.view]);
 const updateMs = performance.now() - updateStart;
-await execute(join(program, 'Uninstall.exe'), ['/S', '_?=' + program], { timeout: 600000 });
+await execute(join(program, 'Uninstall.exe'), ['/S'], { timeout: 600000 });
+// NSIS starts its temporary uninstaller asynchronously. Wait for actual cleanup.
+const cleanupDeadline = Date.now() + 120000;
+while (await access(program).then(() => true).catch(() => false)) {
+  if (Date.now() > cleanupDeadline) throw Error('Uninstaller cleanup timed out');
+  await new Promise(resolve => setTimeout(resolve, 250));
+}
 for (const plan of plans) {
   for (const entry of plan.registry) assert.equal(await registry(entry), undefined);
   await assert.rejects(access(plan.helper)); await assert.rejects(access(plan.extension));
