@@ -1,0 +1,52 @@
+{
+  "source": "Official pinned Thorium 138.0.7204.303 Linux/Windows product-logo payloads; SHA256 identifies exact images, independently of resource IDs.",
+  "knownProductLogos": {
+    "cc7f3757d0e9cae5112677eb1af01a0fb5bead52848c544348f04eaa57df310f": {
+      "width": 64,
+      "height": 64
+    },
+    "f559a3f4dbafc63c19d7724d021d82f64eecad16a343bfc4b720cd2112fb82ba": {
+      "width": 128,
+      "height": 128
+    },
+    "043f6c28c145e02c4b1f0ee23037d9ce645fda8c47f95447afa040d51bd5f911": {
+      "width": 256,
+      "height": 256
+    },
+    "f148e640ba7a543a52e51c16f30f2fc13f1cd5562a5d422a144200e404470f90": {
+      "width": 16,
+      "height": 16
+    },
+    "2fa39c8431ec57c4569ca79499b82f8c719dcfcce2999920fa95e88f3c0a1a00": {
+      "width": 24,
+      "height": 24
+    },
+    "1553a8bcf5d097550105c278f19ab0b1f6582ce1f01706210e5801471cb3c3e5": {
+      "width": 32,
+      "height": 32
+    },
+    "c6d039d379aa6d17a7afbe701a374d3da695613f05cd717ba489410ed871b9f5": {
+      "width": 16,
+      "height": 16
+    },
+    "0f0c83f8b30c694ecfac0c777888c000c828b0adee1f20f68d5ada7f3460dbc1": {
+      "width": 32,
+      "height": 32
+    },
+    "36eb03d6929bb7023a07963aa98428f514ebec7778ea816fa87653b8401bc3d2": {
+      "width": 48,
+      "height": 48
+    },
+    "1c28296601c242548cf9daccfbfc6a230482049621b4ff1d1dbf10c838398023": {
+      "width": 256,
+      "height": 256
+    },
+    "5d4762beaeba9981a6a29ef263fd144eb24d57b10eb1f5e805c0a7effc9c21fd": {
+      "width": 256,
+      "height": 256
+    }
+  },
+  "knownProductExecutables": {
+    "5dc9e35ac2b51ac66925e884e1015f0e24bf961de6e5350226ea701f2c278880": "win32-x64"
+  }
+}
